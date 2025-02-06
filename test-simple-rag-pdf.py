@@ -96,7 +96,7 @@ def main():
             break
         
         # response = qa_chain(user_input)["result"]
-        response = qa_chain.invoke({"question": user_input})
+        response = qa_chain.invoke(user_input)
         print("Response:", response)
 
 if __name__ == "__main__":
