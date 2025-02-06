@@ -96,7 +96,14 @@ def main():
             break
         
         # response = qa_chain(user_input)["result"]
-        response = qa_chain.invoke({"context": "PDF에서 검색된 문서", "question": user_input})
+        # 🔹 검색을 위해 retriever에 `user_input`만 전달해야 함
+        relevant_docs = retriever.invoke(user_input)
+
+        # 🔹 검색된 문서들을 하나의 context로 합침
+        context = "\n".join([doc.page_content for doc in relevant_docs])
+
+        # 🔹 이제 LLM에 `context`와 `question`을 함께 전달
+        response = qa_chain.invoke({"context": context, "question": user_input})
         print("Response:", response)
 
 if __name__ == "__main__":
