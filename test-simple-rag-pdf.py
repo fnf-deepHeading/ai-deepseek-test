@@ -2,7 +2,7 @@ import argparse
 import os
 from langchain_community.document_loaders import PDFPlumberLoader
 from langchain_experimental.text_splitter import SemanticChunker
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.llms import Ollama
 from langchain.prompts import PromptTemplate
@@ -31,6 +31,7 @@ def setup_qa_chain(retriever):
     llm = Ollama(model="deepseek-r1:1.5b")
 
     # 프롬프트 템플릿 작성
+    # 프롬프트들은 json 으로 저장 후 로드 가능 ( 책 p.61 참고 )
     prompt = """
     1. 아래 맥락만 사용하세요.
     2. 확실하지 않은 경우 "모르겠습니다"라고 말하세요.
@@ -42,7 +43,7 @@ def setup_qa_chain(retriever):
 
     답변:
     """
-    QA_CHAIN_PROMPT = PromptTemplate.from_template(prompt)
+    QA_CHAIN_PROMPT = PromptTemplate.from_template(prompt) # PromptTemplate 초기화 과정 ( input_variables 지정 안해도 됨 )
 
     # 체인 1: 답변 생성
     llm_chain = LLMChain(
