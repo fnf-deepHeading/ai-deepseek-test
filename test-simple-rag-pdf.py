@@ -6,10 +6,8 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_ollama import OllamaLLM
 from langchain.prompts import PromptTemplate
-# from langchain.schema.runnable import RunnableLambda
-# from langchain.chains.combine_documents.stuff import StuffDocumentsChain
-from langchain.schema.output_parser import StrOutputParser
-from langchain.schema.runnable import RunnableMap
+from langchain.chains.llm import LLMChain
+from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain.chains import RetrievalQA
 
 def process_pdf(pdf_path):
@@ -48,34 +46,29 @@ def setup_qa_chain(retriever):
     QA_CHAIN_PROMPT = PromptTemplate.from_template(prompt) # PromptTemplate 초기화 과정 ( input_variables 지정 안해도 됨 )
 
     # 체인 1: 답변 생성
-    # llm_chain = QA_CHAIN_PROMPT | llm
-
-    # 체인 2: 문서 청크 결합
-    # document_prompt = PromptTemplate(
-    #     input_variables=["page_content", "source"],
-    #     template="맥락:\ncontent:{page_content}\nsource:{source}"
-    # )
-
-    # combine_documents_chain = StuffDocumentsChain(
-    #     llm_chain=llm_chain,
-    #     document_variable_name="context",
-    #     document_prompt=document_prompt
-    # )
-    
-    # return RetrievalQA(
-    #     combine_documents_chain=combine_documents_chain,
-    #     retriever=retriever,
-    #     return_source_documents=True
-    # )
-
-    qa_chain = (
-        RunnableMap({"context": retriever})  # 문서 검색
-        | QA_CHAIN_PROMPT  # 프롬프트 적용
-        | llm  # LLM 실행
-        | StrOutputParser()  # 결과 파싱
+    llm_chain = LLMChain(
+        llm=llm,
+        prompt=QA_CHAIN_PROMPT,
+        verbose=True
     )
 
-    return qa_chain
+    # 체인 2: 문서 청크 결합
+    document_prompt = PromptTemplate(
+        input_variables=["page_content", "source"],
+        template="맥락:\ncontent:{page_content}\nsource:{source}"
+    )
+
+    combine_documents_chain = StuffDocumentsChain(
+        llm_chain=llm_chain,
+        document_variable_name="context",
+        document_prompt=document_prompt
+    )
+    
+    return RetrievalQA(
+        combine_documents_chain=combine_documents_chain,
+        retriever=retriever,
+        return_source_documents=True
+    )
 
 def main():
     parser = argparse.ArgumentParser()
@@ -95,15 +88,7 @@ def main():
         if user_input.lower() == "exit":
             break
         
-        # response = qa_chain(user_input)["result"]
-        # 🔹 검색을 위해 retriever에 `user_input`만 전달해야 함
-        relevant_docs = retriever.invoke(user_input)
-
-        # 🔹 검색된 문서들을 하나의 context로 합침
-        context = "\n".join([doc.page_content for doc in relevant_docs])
-
-        # 🔹 이제 LLM에 `context`와 `question`을 함께 전달
-        response = qa_chain.invoke({"context": context, "question": user_input})
+        response = qa_chain(user_input)["result"]
         print("Response:", response)
 
 if __name__ == "__main__":
