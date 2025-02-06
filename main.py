@@ -28,7 +28,7 @@ def process_pdf(pdf_path):
 
 def setup_qa_chain(retriever):
     # 모델 선정
-    llm = Ollama(model="deepseek-rl:1.5b")
+    llm = Ollama(model="deepseek-r1:1.5b")
 
     # 프롬프트 템플릿 작성
     prompt = """
